@@ -22,7 +22,7 @@ BASE_DIR    = Path(__file__).parent   # 스크립트 위치 (extsort/)
 CONFIG_PATH = BASE_DIR / "config.json"
 
 # 이동 대상에서 제외할 파일
-SKIP_FILES  = {"organize.py", "config.json"}
+SKIP_FILES  = {"organize.py", "config.json", "organize.bat", "README.md"}
 
 
 # ── 설정 로드 ─────────────────────────────────────────────
