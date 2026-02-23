@@ -5,6 +5,7 @@ input/ 폴더의 파일을 config.json 규칙에 따라 output/ 폴더로 이동
 
 import io
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -17,9 +18,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="repla
 
 
 # ── 경로 상수 ─────────────────────────────────────────────
-BASE_DIR    = Path(__file__).parent
+BASE_DIR    = Path(__file__).parent   # 스크립트 위치 (extsort/)
 CONFIG_PATH = BASE_DIR / "config.json"
-WORK_DIR    = Path.cwd()          # 스크립트를 실행한 현재 디렉토리
 
 # 이동 대상에서 제외할 파일
 SKIP_FILES  = {"organize.py", "config.json"}
@@ -122,6 +122,9 @@ def print_report(stats: dict, errors: list, elapsed: float, dry_run: bool):
 def main():
     start = datetime.now()
 
+    # 실행 시점의 cwd를 작업 디렉토리로 사용 (bat의 cd 경로가 반영됨)
+    work_dir = Path(os.getcwd())
+
     # 1. 설정 읽기
     config   = load_config(CONFIG_PATH)
     rules    = config.get("rules", [])
@@ -131,16 +134,16 @@ def main():
     dry_run          = settings.get("dry_run", False)
     unmatched_folder = settings.get("unmatched_folder", "others")
 
-    # 2. 현재 디렉토리의 파일 목록 수집 (스킵 파일 제외, 디렉토리 제외)
+    # 2. cwd의 파일 목록 수집 (스킵 파일 제외, 디렉토리 제외)
     files = [
-        f for f in WORK_DIR.iterdir()
+        f for f in work_dir.iterdir()
         if f.is_file() and f.name not in SKIP_FILES
     ]
     if not files:
         print("[INFO] 현재 디렉토리에 처리할 파일이 없습니다.")
         return
 
-    print(f"\n[INFO] 작업 디렉토리: {WORK_DIR}")
+    print(f"\n[INFO] 작업 디렉토리: {work_dir}")
     print(f"[INFO] {len(files)}개 파일 처리 시작..." + (" (DRY-RUN 모드)" if dry_run else ""))
     print()
 
@@ -157,7 +160,7 @@ def main():
             folder    = unmatched_folder
             rule_name = "미분류"
 
-        dest_dir = WORK_DIR / folder  # 현재 디렉토리 안에 카테고리 폴더 생성
+        dest_dir = work_dir / folder  # cwd 안에 카테고리 폴더 생성
         success, msg = move_file(file, dest_dir, overwrite, dry_run)
 
         print(msg)
