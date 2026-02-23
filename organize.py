@@ -19,8 +19,10 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="repla
 # ── 경로 상수 ─────────────────────────────────────────────
 BASE_DIR    = Path(__file__).parent
 CONFIG_PATH = BASE_DIR / "config.json"
-INPUT_DIR   = BASE_DIR / "input"
-OUTPUT_DIR  = BASE_DIR / "output"
+WORK_DIR    = Path.cwd()          # 스크립트를 실행한 현재 디렉토리
+
+# 이동 대상에서 제외할 파일
+SKIP_FILES  = {"organize.py", "config.json"}
 
 
 # ── 설정 로드 ─────────────────────────────────────────────
@@ -73,13 +75,13 @@ def move_file(src: Path, dest_dir: Path, overwrite: bool, dry_run: bool) -> tupl
         dest = dest_dir / f"{src.stem}_{timestamp}{src.suffix}"
 
     if dry_run:
-        return True, f"[DRY-RUN] {src.name}  →  {dest_dir.name}/"
+        return True, f"[DRY-RUN] {src.name}  ->  {dest_dir.name}/"
 
     try:
         shutil.move(str(src), str(dest))
-        return True, f"  ✔  {src.name}  →  {dest_dir.name}/"
+        return True, f"  [OK]  {src.name}  ->  {dest_dir.name}/"
     except Exception as e:
-        return False, f"  ✘  {src.name}  →  이동 실패 ({e})"
+        return False, f"  [ERR] {src.name}  ->  이동 실패 ({e})"
 
 
 # ── 결과 리포트 ────────────────────────────────────────────
@@ -90,13 +92,13 @@ def print_report(stats: dict, errors: list, elapsed: float, dry_run: bool):
 
     print()
     print(divider)
-    print("  📊  FileOrganizer 결과 리포트" + ("  [DRY-RUN]" if dry_run else ""))
+    print("  [REPORT] FileOrganizer 결과 리포트" + ("  [DRY-RUN]" if dry_run else ""))
     print(divider)
 
     if stats:
         print("  폴더별 이동 현황:")
         for folder, count in sorted(stats.items(), key=lambda x: -x[1]):
-            bar = "█" * min(count, 30)
+            bar = "#" * min(count, 30)
             print(f"    {folder:<15}  {bar}  {count}개")
     else:
         print("  이동된 파일이 없습니다.")
@@ -109,7 +111,7 @@ def print_report(stats: dict, errors: list, elapsed: float, dry_run: bool):
     print(divider)
 
     if errors:
-        print("  ⚠  오류 목록:")
+        print("  [!] 오류 목록:")
         for err in errors:
             print(f"    {err}")
         print(divider)
@@ -129,17 +131,17 @@ def main():
     dry_run          = settings.get("dry_run", False)
     unmatched_folder = settings.get("unmatched_folder", "others")
 
-    # 2. input/ 폴더 확인
-    if not INPUT_DIR.exists():
-        INPUT_DIR.mkdir(parents=True)
-        print(f"[INFO] input/ 폴더가 없어 생성했습니다: {INPUT_DIR}")
-
-    files = [f for f in INPUT_DIR.iterdir() if f.is_file()]
+    # 2. 현재 디렉토리의 파일 목록 수집 (스킵 파일 제외, 디렉토리 제외)
+    files = [
+        f for f in WORK_DIR.iterdir()
+        if f.is_file() and f.name not in SKIP_FILES
+    ]
     if not files:
-        print("[INFO] input/ 폴더에 파일이 없습니다.")
+        print("[INFO] 현재 디렉토리에 처리할 파일이 없습니다.")
         return
 
-    print(f"\n[INFO] {len(files)}개 파일 처리 시작..." + (" (DRY-RUN 모드)" if dry_run else ""))
+    print(f"\n[INFO] 작업 디렉토리: {WORK_DIR}")
+    print(f"[INFO] {len(files)}개 파일 처리 시작..." + (" (DRY-RUN 모드)" if dry_run else ""))
     print()
 
     # 3 ~ 5. 분류 → 폴더 생성 → 파일 이동
@@ -153,7 +155,7 @@ def main():
             folder    = unmatched_folder
             rule_name = "미분류"
 
-        dest_dir = OUTPUT_DIR / folder
+        dest_dir = WORK_DIR / folder  # 현재 디렉토리 안에 카테고리 폴더 생성
         success, msg = move_file(file, dest_dir, overwrite, dry_run)
 
         print(msg)
