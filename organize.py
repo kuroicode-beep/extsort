@@ -3,12 +3,17 @@ FileOrganizer - 파일 자동 분류 스크립트
 input/ 폴더의 파일을 config.json 규칙에 따라 output/ 폴더로 이동합니다.
 """
 
+import io
 import json
 import shutil
 import sys
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
+
+# Windows cp949 환경에서도 한글/특수문자 출력
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 
 # ── 경로 상수 ─────────────────────────────────────────────
