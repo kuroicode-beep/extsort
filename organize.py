@@ -145,8 +145,10 @@ def main():
     print()
 
     # 3 ~ 5. 분류 → 폴더 생성 → 파일 이동
-    stats  = defaultdict(int)
-    errors = []
+    stats         = defaultdict(int)
+    errors        = []
+    success_count = 0
+    fail_count    = 0
 
     for file in sorted(files):
         folder, rule_name = classify_file(file.name, rules)
@@ -162,12 +164,15 @@ def main():
 
         if success:
             stats[folder] += 1
+            success_count += 1
         else:
             errors.append(msg)
+            fail_count += 1
 
     # 6. 결과 리포트
     elapsed = (datetime.now() - start).total_seconds()
     print_report(dict(stats), errors, elapsed, dry_run)
+    print(f"성공: {success_count}개, 실패: {fail_count}개")
 
 
 if __name__ == "__main__":
